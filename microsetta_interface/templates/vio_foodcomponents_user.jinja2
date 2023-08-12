@@ -1,0 +1,92 @@
+{% extends "sitebase.jinja2" %}
+{% set page_title = _("Food Components User") %}
+{% set show_breadcrumbs = True %}
+{% block head %}
+    <script src='https://cdn.plot.ly/plotly-2.9.0.min.js'></script>
+    <script>
+        function update(){
+            var selected = $("#selected_code").val();
+            var name = {{menu_data}}[selected][0];
+            var units = {{menu_data}}[selected][1];
+            var user_val = {{user_data}}[selected];
+            if (user_val == null) {
+                window.location.replace("{{ endpoint }}/error?error_msg=User Food Component Not Found");
+            }
+            var result_txt = "";
+            var error_txt = "";
+
+            $.ajax({
+                type: "GET",
+                url: "{{endpoint}}/vioscreen/foodcomponents/code/" + selected,
+                success: function (data, textStatus, jqXHR) {
+                    result_txt = data;
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    error_txt = jqXHR.responseText;
+                },
+                complete: function (data, textStatus, output_obj) {
+                    if (result_txt !== "") {
+                        cs_data = JSON.parse(result_txt);
+                        amounts = cs_data.amounts;
+                        var trace = {
+                            x: amounts,
+                            type: 'histogram',
+                            name: 'Population Data'
+                        };
+                        var layout = {
+                            bargap: 0.05,
+                            title: "Results for " + name,
+                            xaxis: {title: "Amount (" + units + ")"},
+                            yaxis: {title: "Number of Participants"},
+                            shapes: [
+                                {
+                                    type: 'line',
+                                    xref: 'amounts',
+                                    yref: 'paper',
+                                    x0: user_val,
+                                    y0: 0,
+                                    x1: user_val,
+                                    y1: 1,
+                                    opacity: 1,
+                                    line: {
+                                        color: 'rgb(255, 215, 0)',
+                                        width: 3
+                                    }
+                                }
+                            ],
+                            showlegend: true,
+                            legend: {
+                                x: 1,
+                                xanchor: 'right',
+                                y: 1
+                            }
+                        };
+                        var data = [trace];
+                        Plotly.newPlot('nutrientSummary', data, layout);
+                    } else {
+                        if (error_txt === ""){
+                            error_txt = textStatus;
+                        }
+                        let queryParam = encodeURIComponent(error_txt);
+                        window.location.replace("{{ endpoint }}/error?error_msg=" + queryParam);
+                    }
+                },
+                dataType: "html",
+                contentType: "application/json"
+            });
+        }
+    </script>
+{% endblock %}
+{% block content %}
+    <div id="selection">
+        <select id="selected_code" name="selected_code" onChange="update();">
+            {% for code, description in menu_data.items() %}
+                <option value="none" selected disabled hidden>Select a Food Component</option>
+                <option value="{{code}}"> {{description[0]}} </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div id="nutrientSummary">
+
+    </div>
+{% endblock %}

@@ -629,6 +629,95 @@ paths:
           description: No such pdf
 
 
+  '/vioscreen/foodcomponents':
+    get:
+      operationId: microsetta_interface.implementation.get_vioscreen_food_components_menu
+      tags:
+        - Vioscreen
+      summary: Get general information about Vioscreen food components and links to specific codes
+      description: Get general information about Vioscreen food components and links to specific codes
+      responses:
+        '200':
+          description: Food components menu
+          content:
+            text/html:
+              schema:
+                type: string
+
+  '/vioscreen/foodcomponents/code/{fc_code}':
+    get:
+      operationId: microsetta_interface.implementation.get_vioscreen_food_components_by_code
+      tags:
+        - Vioscreen
+      summary: Get information about Vioscreen food components for a specific code
+      description: Get information about Vioscreen food components for a specific code
+      parameters:
+        - $ref: '#/components/parameters/fc_code'
+      responses:
+        '200':
+          description: Food components code-specific data
+          content:
+            text/html:
+              schema:
+                type: object
+
+  '/accounts/{account_id}/sources/{source_id}/samples/{sample_id}/vioscreen/foodcomponents':
+    get:
+      operationId: microsetta_interface.implementation.get_vioscreen_food_components_by_user
+      tags:
+        - Vioscreen
+      summary: Get information about Vioscreen food components for a specific sample
+      description: Get information about Vioscreen food components for a specific sample
+      parameters:
+        - $ref: '#/components/parameters/account_id'
+        - $ref: '#/components/parameters/source_id'
+        - $ref: '#/components/parameters/sample_id'
+      responses:
+        '200':
+          description: Food components user-specific menu
+          content:
+            text/html:
+              schema:
+                type: string
+
+  '/accounts/{account_id}/sources/{source_id}/samples/{sample_id}/vioscreen/foodcomponents/comparison':
+    get:
+      operationId: microsetta_interface.implementation.get_vioscreen_food_components_by_user_comparison
+      tags:
+        - Vioscreen
+      summary: Compare information about Vioscreen food components for a specific sample
+      description: Compare information about Vioscreen food components for a specific sample
+      parameters:
+        - $ref: '#/components/parameters/account_id'
+        - $ref: '#/components/parameters/source_id'
+        - $ref: '#/components/parameters/sample_id'
+      responses:
+        '200':
+          description: Food components user-specific comparison
+          content:
+            text/html:
+              schema:
+                type: string
+
+  '/accounts/{account_id}/sources/{source_id}/samples/{sample_id}/vioscreen/nutritionreport':
+    get:
+      operationId: microsetta_interface.implementation.get_vioscreen_nutrition_report
+      tags:
+        - Vioscreen
+      summary: Get Vioscreen nutrition report for a specific sample
+      description: Get Vioscreen nutrition report for a specific sample
+      parameters:
+        - $ref: '#/components/parameters/account_id'
+        - $ref: '#/components/parameters/source_id'
+        - $ref: '#/components/parameters/sample_id'
+      responses:
+        '200':
+          description: Vioscreen nutrition report
+          content:
+            text/html:
+              schema:
+                type: string
+
   '/check_kit_valid':
     get:
       operationId: microsetta_interface.implementation.get_ajax_check_kit_valid
@@ -1071,6 +1160,13 @@ components:
       description: Error message provided by front-end
       schema:
         $ref: '#/components/schemas/error_msg'
+    fc_code:
+      name: fc_code
+      in: path
+      description: Food Components Code
+      schema:
+        $ref: '#/components/schemas/fc_code'
+      required: true
 
   schemas:
     # account section
@@ -1106,4 +1202,7 @@ components:
     activation_code:
       type: string
       example: TMI-XXXXX-XXXXX-XXXXX
+    fc_code:
+      type: string
+      example: "acesupot"
 

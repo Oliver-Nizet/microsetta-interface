@@ -908,6 +908,91 @@ def top_food_report_pdf(*,
     return response
 
 
+def get_vioscreen_food_components_menu():
+    has_error, menu_data, _ = ApiRequest.get('/vioscreen/foodcomponents')
+
+    if has_error:
+        return menu_data
+
+    return _render_with_defaults('vio_foodcomponents.jinja2',
+                                 menu_data=menu_data)
+
+
+def get_vioscreen_food_components_by_code(fc_code):
+    has_error, cs_data, _ = ApiRequest.get(
+        '/vioscreen/foodcomponents/code/%s' % fc_code)
+
+    if has_error:
+        return jsonify(code=404, message="Food Components not found"), 404
+
+    return cs_data
+
+def get_vioscreen_food_components_by_user(account_id, source_id,
+                                          sample_id):
+    has_error, menu_data, _ = ApiRequest.get('/vioscreen/foodcomponents')
+
+    if has_error:
+        return menu_data
+
+    has_error2, raw_user_data, _ = ApiRequest.get(
+        '/accounts/%s/sources/%s/samples/%s/vioscreen/foodcomponents'
+        % (account_id, source_id, sample_id))
+
+    if has_error2:
+        return raw_user_data
+
+    user_data = {component['code']: component['amount']
+                 for component in raw_user_data['data']}
+
+    return _render_with_defaults('vio_foodcomponents_user.jinja2',
+                                 menu_data=menu_data, user_data=user_data)
+
+def get_vioscreen_food_components_by_user_comparison(account_id, source_id,
+                                                     sample_id):
+    has_error, menu_data, _ = ApiRequest.get('/vioscreen/foodcomponents')
+
+    if has_error:
+        return menu_data
+
+    has_error2, raw_user_data, _ = ApiRequest.get(
+        '/accounts/%s/sources/%s/samples/%s/vioscreen/foodcomponents'
+        % (account_id, source_id, sample_id))
+
+    if has_error2:
+        return raw_user_data
+
+    user_data = {component['code']: component['amount']
+                 for component in raw_user_data['data']}
+
+    return _render_with_defaults('vio_foodcomponents_user_comparison.jinja2',
+                                 menu_data=menu_data, user_data=user_data)
+
+def get_vioscreen_nutrition_report(account_id, source_id, sample_id):
+    has_error, raw_fc_user_data, _ = ApiRequest.get(
+        '/accounts/%s/sources/%s/samples/%s/vioscreen/foodcomponents'
+        % (account_id, source_id, sample_id))
+
+    if has_error:
+        return raw_fc_user_data
+
+    fc_user_data = {component['code']: component['amount']
+                    for component in raw_fc_user_data['data']}
+
+    has_error2, raw_mpeds_user_data, _ = ApiRequest.get(
+        '/accounts/%s/sources/%s/samples/%s/vioscreen/mpeds'
+        % (account_id, source_id, sample_id))
+
+    if has_error2:
+        return raw_mpeds_user_data
+
+    mpeds_user_data = {component['code']: component['amount']
+                       for component in raw_mpeds_user_data['data']}
+
+    fc_user_data.update(mpeds_user_data)
+
+    return _render_with_defaults('nutrition_report.jinja2',
+                                 user_data=fc_user_data)
+
 @prerequisite([SOURCE_PREREQS_MET])
 def get_source(*, account_id=None, source_id=None):
     # Retrieve the account to determine which kit it was created with

@@ -1,0 +1,203 @@
+{% extends "sitebase.jinja2" %}
+{% set page_title = _("Food Components User Comparison") %}
+{% set show_breadcrumbs = True %}
+{% block head %}
+    <script src='https://cdn.plot.ly/plotly-2.9.0.min.js'></script>
+    <script>
+        function update(){
+            var selected = $("#selected_code").val();
+            var selected2 = $("#selected_code2").val();
+            if (selected === null || selected2 === null) {
+                return;
+            }
+
+            var name = {{menu_data}}[selected][0];
+            var units = {{menu_data}}[selected][1];
+            var user_val = {{user_data}}[selected];
+
+            var name2 = {{menu_data}}[selected2][0];
+            var units2 = {{menu_data}}[selected2][1];
+            var user_val2 = {{user_data}}[selected2];
+
+            if (user_val == null || user_val2 == null) {
+                window.location.replace("{{ endpoint }}/error?error_msg=User Food Component Not Found");
+            }
+
+            $.when($.ajax({
+                type: "GET",
+                url: "{{endpoint}}/vioscreen/foodcomponents/code/" + selected,
+                success: function (data, textStatus, jqXHR) {
+                    result_txt = data;
+                    text_status = textStatus;
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    error_txt = jqXHR.responseText;
+                },
+                complete: function (data, textStatus, output_obj) {
+
+                },
+                dataType: "html",
+                contentType: "application/json"
+            }), $.ajax({
+                type: "GET",
+                url: "{{endpoint}}/vioscreen/foodcomponents/code/" + selected2,
+                success: function (data, textStatus, jqXHR) {
+                    result_txt2 = data;
+                    text_status2 = textStatus;
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    error_txt2 = jqXHR.responseText;
+                },
+                complete: function (data, textStatus, output_obj) {
+
+                },
+                dataType: "html",
+                contentType: "application/json"
+            })).then(function (results1, results2) {
+                if (result_txt !== "" && result_txt2 !== "") {
+                    cs_data = JSON.parse(results1[0]);
+                    amounts = cs_data.amounts;
+
+                    cs_data2 = JSON.parse(results2[0]);
+                    amounts2 = cs_data2.amounts;
+
+                    lr = linearRegression(amounts2, amounts);
+
+                    x_1 = Math.min(...amounts);
+                    x_2 = Math.max(...amounts);
+                    y_1 = lr.slope * x_1 + lr.intercept
+                    y_2 = lr.slope * x_2 + lr.intercept
+
+                    resid = user_val2 - (lr.slope * user_val + lr.intercept)
+
+                    var trace = {
+                        x: amounts,
+                        y: amounts2,
+                        mode: 'markers',
+                        type: 'scatter',
+                        name: 'Population Data'
+                    };
+                    var trace_user = {
+                        x: [user_val],
+                        y: [user_val2],
+                        mode: 'markers',
+                        marker: {
+                            size: 10,
+                            line: {
+                                color: 'rgb(0, 0, 0)',
+                                width: 1
+                            }
+                        },
+                        type: 'scatter',
+                        name: 'Your Values'
+                    };
+                    var layout = {
+                        title: "Results for " + name2 + " vs. " + name,
+                        xaxis: {title: name + " (" + units + ")"},
+                        yaxis: {title: name2 + " (" + units2 + ")"},
+                        showlegend: true,
+                        legend: {
+                            x: 1,
+                            xanchor: 'right',
+                            y: 1
+                        },
+                        shapes: [
+                            {
+                                type: 'line',
+                                    xref: 'amounts',
+                                    yref: 'amounts2',
+                                    x0: x_1,
+                                    y0: y_1,
+                                    x1: x_2,
+                                    y1: y_2,
+                                    opacity: 1,
+                                    line: {
+                                        color: 'rgb(255, 215, 0)',
+                                        width: 2
+                                }
+                            }
+                        ],
+                        annotations: [
+                            {
+                                xref: 'paper',
+                                yref: 'paper',
+                                x: 0.5,
+                                xanchor: 'middle',
+                                y: 1,
+                                yanchor: 'bottom',
+                                text: 'Least Squares Regression Line: ŷ = (' + lr.slope + ')x + (' + lr.intercept + ')               r²: ' + lr.r2,
+                                showarrow: false
+                            },
+                            {
+                                xref: 'x',
+                                yref: 'y',
+                                x: user_val,
+                                y: user_val2,
+                                text: 'Residual: ' + resid,
+                                showarrow: true,
+                                ax: 0,
+                                ay: -40
+                            }
+                        ]
+                    };
+                    var data = [trace, trace_user];
+                    Plotly.newPlot('nutrientSummary', data, layout);
+                } else {
+                    console.log(result_txt + " | " + result_txt2);
+                    if (error_txt === ""){
+                        error_txt = text_status;
+                    }
+                    if (error_txt2 === ""){
+                        error_txt2 = text_status2;
+                    }
+                    //let queryParam = encodeURIComponent(error_txt2);
+                    //window.location.replace("{{ endpoint }}/error?error_msg=" + queryParam);
+                }
+            });
+        }
+
+        function linearRegression(y,x){
+            var lr = {};
+            var n = y.length;
+            var sum_x = 0;
+            var sum_y = 0;
+            var sum_xy = 0;
+            var sum_xx = 0;
+            var sum_yy = 0;
+
+            for (var i = 0; i < y.length; i++) {
+
+                sum_x += x[i];
+                sum_y += y[i];
+                sum_xy += (x[i]*y[i]);
+                sum_xx += (x[i]*x[i]);
+                sum_yy += (y[i]*y[i]);
+            }
+
+            lr['slope'] = (n * sum_xy - sum_x * sum_y) / (n*sum_xx - sum_x * sum_x);
+            lr['intercept'] = (sum_y - lr.slope * sum_x)/n;
+            lr['r2'] = Math.pow((n*sum_xy - sum_x*sum_y)/Math.sqrt((n*sum_xx-sum_x*sum_x)*(n*sum_yy-sum_y*sum_y)),2);
+
+            return lr;
+        }
+    </script>
+{% endblock %}
+{% block content %}
+    <div id="selection">
+        <select id="selected_code" name="selected_code" onChange="update();">
+            {% for code, description in menu_data.items() %}
+                <option value="none" selected disabled hidden>Select x-axis Food Component</option>
+                <option value="{{code}}"> {{description[0]}} </option>
+            {% endfor %}
+        </select>
+        <select id="selected_code2" name="selected_code2" onChange="update();">
+            {% for code, description in menu_data.items() %}
+                <option value="none" selected disabled hidden>Select y-axis Food Component</option>
+                <option value="{{code}}"> {{description[0]}} </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div id="nutrientSummary">
+
+    </div>
+{% endblock %}

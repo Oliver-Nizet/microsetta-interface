@@ -1,0 +1,58 @@
+{% extends "sitebase.jinja2" %}
+{% set page_title = _("Nutrition Report") %}
+{% set show_breadcrumbs = True %}
+{% block head %}
+    <script src='https://cdn.plot.ly/plotly-2.9.0.min.js'></script>
+    <script>
+        {% include '/js_templates/nutrition_report.js'%}
+
+        $( document ).ready(function(){
+            nr = new NutritionReport({{user_data}});
+            nr.plotData();
+        })
+    </script>
+{% endblock %}
+{% block content %}
+    <div class="container">
+    <div class="row">
+            <div class="col-sm">
+                <div id="foodGroupsSummary">
+                </div>
+            </div>
+            <div class="col-sm">
+                <div id="foodGroupsGraph">
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm">
+                <div id="macronutrientSummary">
+                </div>
+            </div>
+            <div class="col-sm">
+                <div id="macronutrientGraph">
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm">
+                <div id="mineralsSummary">
+                </div>
+            </div>
+            <div class="col-sm">
+                <div id="vitaminsSummary">
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm">
+                <div id="nutrientsToLimitSummary">
+                </div>
+            </div>
+            <div class="col-sm">
+                <div id="otherSummary">
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
