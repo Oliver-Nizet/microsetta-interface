@@ -325,6 +325,6 @@ class NutritionReport {
             };
 
             Plotly.newPlot('macronutrientGraph', data, layout);
-        });
+        }));
     }
 }
